@@ -58,7 +58,6 @@ bool fileGenerator(char _dataFileName[NAME], int _registersQuant){              
     return true;
 }
 
-
 /// Insert the node in the External Memory
 bool insertion(registry_t _entry, int _registersAtFile){
     FILE *treeFile;
@@ -95,20 +94,20 @@ bool insertion(registry_t _entry, int _registersAtFile){
             if (currentNode.left == -1){
                 // Insertion process
                 // Update current node, now it points to the end of file
-
                 currentNode.left = _registersAtFile;
                 fseek(treeFile, -1 * sizeof(Node), SEEK_CUR);
                 fwrite(&currentNode, sizeof(Node), 1, treeFile);
 
                 //  Adds new node
-
                 fseek(treeFile, 0, SEEK_END);
                 fwrite(&NewNode, sizeof(Node), 1, treeFile);
                 processSucess = true;
 
             } else {
+                // Reset
+                rewind(treeFile);
                 // Keep Looking
-                fseek(treeFile, (currentNode.left) * sizeof(Node), SEEK_END);
+                fseek(treeFile, (currentNode.left) * sizeof(Node), SEEK_CUR);
             }
 
         //  Check right
@@ -118,21 +117,21 @@ bool insertion(registry_t _entry, int _registersAtFile){
             if (currentNode.right == -1){
                 // Insertion process
                 // Update current node, now it points to the end of file
-
                 currentNode.right = _registersAtFile;
                 fseek(treeFile, -1 * sizeof(Node), SEEK_CUR);
                 fwrite(&currentNode, sizeof(Node), 1, treeFile);
 
                 //  Adds new node
-
                 fseek(treeFile, 0, SEEK_END);
                 fwrite(&NewNode, sizeof(Node), 1, treeFile);
                 processSucess = true;
 
 
             } else {
+                // Reset
+                rewind(treeFile);
                 // Keep Looking
-                fseek(treeFile, (currentNode.right) * sizeof(Node), SEEK_END);
+                fseek(treeFile, (currentNode.right) * sizeof(Node), SEEK_CUR);
             }
 
         // Nodes are equal, that means a fail
@@ -154,15 +153,55 @@ bool insertion(registry_t _entry, int _registersAtFile){
     return true;
 }
 
+/// Find registry at External File 
+registry_t ExternalFinder(int _targetKey){
+    Node current;
+    registry_t target;
+    target.key = -1;
+    FILE * ExternalFile = fopen("ExternalTree", "rb");
 
-Result ExternalSearchTree(char _dataFileName[NAME], int _registersQuant){                        /// USED PLACEHOLDER FOR COMMONS (NAME const)
+    while (fread(&current, sizeof(Node), 1, ExternalFile) != EOF){
+        if(current.data.key == _targetKey){
+            target = current.data;
+            printf("HIT\n");                                                           //Remove after
+            break;
+        } else if(current.data.key > _targetKey){
+            rewind(ExternalFile);
+            fseek(ExternalFile, current.left * sizeof(Node), SEEK_CUR);
+            printf("Esquerda\n");                                                           //Remove after
+        } else if(current.data.key < _targetKey){
+            rewind(ExternalFile);
+            fseek(ExternalFile, current.right * sizeof(Node), SEEK_CUR);
+            printf("Direita\n");                                                           //Remove after
+        }
+    }
+    fclose(ExternalFile);    
+    if(target.key == -1){
+        printf("Register not found\n");
+    }
+    return target;
+}
+
+/// Main function
+Result ExternalSearchTree(char _dataFileName[NAME], int _registersQuant, int _targetKey){                        /// USED PLACEHOLDER FOR COMMONS (NAME const an Result)
     Result tempResult;
     // inicializa result (função esperada do arquivo commons)               /// USED PLACEHOLDER FOR COMMONS (inicialization function)
 
+    registry_t registryTobeFound;
+
     if(fileGenerator(_dataFileName, _registersQuant) == false){
-        printf("External Search Tree failed. Ending execution...\n");     
+        printf("External Search Tree failed. Creation...\n Ending execution...\n");     
+        // declare falha 
         return tempResult;
     }
 
+    registryTobeFound = ExternalFinder(_targetKey);
+    if(registryTobeFound.key == -1){
+        printf("External Search Tree failed. Search...\n Ending execution...\n");     
+        // declare Falha
+        return tempResult;
+    }
+
+    return tempResult;
 }
 

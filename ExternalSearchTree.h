@@ -40,14 +40,26 @@ typedef registry_t pagina[ITENS_PAG];
 
 
 
-// Tipos finais desse modulo
+// Types used in the algorithm
 
 typedef struct {
     registry_t data;
     int left, right;
 } Node;
 
-Result ExternalSearchTree(char*, int);
+/// How use this function:
+// Parameters: 1- name of the binary file that contains the registers	(char[])
+// 2- number of registers in the binary file							(int)
+// 3- The key of the register that needs to be found					(int)
+// Return: the register and the data related to the performance
+// If something go wrong during the execution the boolean variable <> will be false
+// Exemple of implemetantion:
+//
+//	Result tempResult = ExternalSearchTree(FileName, RegisterQuant, TargetKey);
+//	if(tempResult.<> == False)	
+//		printf("Execution Failed");
+//
+Result ExternalSearchTree(char*, int, int);
 
 
 #endif 
