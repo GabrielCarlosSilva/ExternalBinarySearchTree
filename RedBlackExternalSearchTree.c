@@ -39,7 +39,7 @@ Node nodeStarter(registry_t information){
 }
 
 // Checks if file Exists
-bool fileExists(char _filename[NAME]){
+bool fileExists(char* _filename){
     struct stat buffer;
     return (stat(_filename, &buffer));
 }
@@ -62,30 +62,29 @@ void printRedBlackTree(FILE* _treeFile, int _quantRegs){
 
 /// External Search Tree generic functions
 // Find registry at External File (não há necessidade)
-registry_t ExternalFinder(int _targetKey, char _ExternalFileName[NAME]){
+bool ExternalFinder(search_result* _resultInfo, int _targetKey, char* _ExternalFileName){
     Node current;
-    registry_t target;
-    target.key = -1;
     FILE * ExternalFile = fopen(_ExternalFileName, "rb");
+    _resultInfo->target.key = -2;
 
     while (fread(&current, sizeof(Node), 1, ExternalFile) != EOF){
         if(current.data.key == _targetKey){
-            target = current.data;
+            _resultInfo->target = current.data;
             printf("The key was found! Returning Data...\n");
             break;
         } else if(current.data.key > _targetKey){
-            rewind(ExternalFile);
-            fseek(ExternalFile, current.left * sizeof(Node), SEEK_CUR);
+            fseek(ExternalFile, current.left * sizeof(Node), SEEK_SET);
         } else if(current.data.key < _targetKey){
-            rewind(ExternalFile);
-            fseek(ExternalFile, current.right * sizeof(Node), SEEK_CUR);
+            fseek(ExternalFile, current.right * sizeof(Node), SEEK_SET);
         }
     }
-    fclose(ExternalFile);    
-    if(target.key == -1){
+    fclose(ExternalFile);  
+
+    if(_resultInfo->target.key == -2){
         printf("Register not found\n");
+        return false;
     }
-    return target;
+    return true;
 }
 
 // Insert the node in the External Memory
@@ -183,7 +182,7 @@ bool insertion(FILE* _treeFile, registry_t _entry, int _registersAtFile){
 }
 
 // Generates the file of the binary search tree + calls the balance function
-bool fileGenerator(char _dataFileName[NAME], int _registersQuant, int _ExternalFileName[NAME]){                               /// USED PLACEHOLDER FOR COMMONS (NAME const)
+bool fileGenerator(char* _dataFileName, int _registersQuant, int* _ExternalFileName){     
     FILE *dataFile, *treeFile;
 
     // Open/crete files and prevent errors
@@ -199,15 +198,15 @@ bool fileGenerator(char _dataFileName[NAME], int _registersQuant, int _ExternalF
     // Start generating
     printf("Generating the External Search Tree File...\n");
     
-    pagina pageInfo;                                                        // USED PLACEHODER FOR COMMONS (pagina type)
+    page_info pageInfo;                                                        
     int currentPage = 0;
     int registersAtFile = 0;
-    int itensAtCurrentPage = ITENS_PAG;                                     /// USED PLACEHOLDER FOR COMMONS (ITENS_PAGE)
-    int totalPages = _registersQuant / ITENS_PAG;                           /// USED PLACEHOLDER FOR COMMONS (ITENS_PAGE)
+    int itensAtCurrentPage = ITENS_PER_PAGE;                                     
+    int totalPages = _registersQuant / ITENS_PER_PAGE;                          
 
     while (currentPage <= totalPages){
         if(currentPage == totalPages)
-            itensAtCurrentPage = _registersQuant - (currentPage * ITENS_PAG);       /// USED PLACEHOLDER FOR COMMONS (ITENS_PAGE)
+            itensAtCurrentPage = _registersQuant - (currentPage * ITENS_PER_PAGE);
         
         fread(&pageInfo, sizeof(registry_t), itensAtCurrentPage, dataFile);
 
@@ -479,25 +478,19 @@ void RedBlackTreeBalance(FILE* _treeFile, int _Xline){
 }
 
 /// Main function
-Result ExternalSearchTree(char _dataFileName[NAME], int _registersQuant, int _targetKey){                        /// USED PLACEHOLDER FOR COMMONS (NAME const an Result)
-    char ExternalFileName[NAME] = "ExternalTree";
-    Result tempResult;
-    // inicializa result (função esperada do arquivo commons)               /// USED PLACEHOLDER FOR COMMONS (inicialization function)
-
+bool ExternalSearchTree(search_result* _resultInfo ,char* _dataFileName, int _registersQuant, int _targetKey){ 
+    char* ExternalFileName = "ExternalTree";
     // Delete file if it exists
     if(fileExists(ExternalFileName))
         remove(ExternalFileName);
 
-    if(fileGenerator(_dataFileName, _registersQuant, ExternalFileName) == false){
+    if(!fileGenerator(_dataFileName, _registersQuant, ExternalFileName)){
         printf("External Search Tree failed. Creation...\n Ending execution...\n");     
-        // declare falha 
-        return tempResult;
+        return false;
     }
-    tempResult.target = ExternalFinder(_targetKey, ExternalFileName);
-    if(tempResult.target.key == -1){
+    if(ExternalFinder(_resultInfo ,_targetKey, ExternalFileName)){
         printf("External Search Tree failed. Search...\n Ending execution...\n");     
-        // declare Falha
-        return tempResult;
+        return false;
     }
-    return tempResult;
+    return true;
 }
